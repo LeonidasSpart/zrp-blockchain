@@ -1,0 +1,46 @@
+name: Flatten Repo to Root
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+
+jobs:
+  flatten:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Move all files to root
+        run: |
+          # Find any subdirectory that contains the blockchain files
+          # This handles cases like zrp-blockchain-main, zrp-blockchain-devnet, etc.
+          SUBDIR=$(find . -maxdepth 1 -type d ! -path "." ! -path "./.git" | head -n 1)
+
+          if [ -z "$SUBDIR" ]; then
+            echo "✅ No subdirectory found – repo already flattened"
+            exit 0
+          fi
+
+          echo "📁 Found subdirectory: $SUBDIR"
+
+          # Move everything (including hidden files) from subdir to root
+          shopt -s dotglob
+          mv "$SUBDIR"/* . 2>/dev/null || true
+          mv "$SUBDIR"/.* . 2>/dev/null || true
+          shopt -u dotglob
+
+          # Remove the empty subdirectory
+          rmdir "$SUBDIR" 2>/dev/null || echo "⚠️ Directory not empty, force removing..."
+          rm -rf "$SUBDIR" 2>/dev/null || true
+
+          echo "✅ Files moved to root"
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "Flatten repo: move all files to root"
+          git push
