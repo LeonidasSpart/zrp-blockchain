@@ -19,7 +19,7 @@ jobs:
             mv zrp-blockchain* .
             rmdir zrp-blockchain
           else
-            echo "zrp-wallet-sdk-main not found, nothing to flatten"
+            echo "zrp-blockchain not found, nothing to flatten"
             exit 1
           fi
 
