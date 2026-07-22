@@ -12,16 +12,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Flatten directory
+      - name: Find and flatten the SDK directory
         run: |
-          if [ -d "zrp-blockchain" ]; then
-            shopt -s dotglob
-            mv zrp-blockchain* .
-            rmdir zrp-blockchain
-          else
-            echo "zrp-blockchain-main not found, nothing to flatten"
+          # Find the first directory that looks like the SDK root
+          # This handles both "zrp-blockchain" and "zrp-blockchain-main"
+          SDK_DIR=$(find . -maxdepth 1 -type d -name "zrp-blockchain*" | head -n 1)
+
+          if [ -z "$SDK_DIR" ]; then
+            echo "❌ No SDK directory found (looking for zrp-blockchain*)"
             exit 1
           fi
+
+          echo "📁 Found SDK directory: $SDK_DIR"
+
+          # Move all contents (including hidden files) to root
+          # The trailing slash is important for rsync
+          rsync -av --remove-source-files "$SDK_DIR/" ./
+
+          # Remove empty directories
+          find "$SDK_DIR" -type d -empty -delete
+
+          # If the directory is now empty, remove it
+          rmdir "$SDK_DIR" 2>/dev/null || echo "⚠️ Directory not empty, will be handled by git"
 
       - name: Commit changes
         run: |
