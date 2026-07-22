@@ -1,0 +1,32 @@
+name: Flatten SDK
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+
+jobs:
+  flatten:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Flatten directory
+        run: |
+          if [ -d "zrp-blockchain" ]; then
+            shopt -s dotglob
+            mv zrp-blockchain* .
+            rmdir zrp-blockchain
+          else
+            echo "zrp-wallet-sdk-main not found, nothing to flatten"
+            exit 1
+          fi
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "Flatten repo: move SDK files to root"
+          git push
